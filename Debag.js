@@ -1,26 +1,38 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+const express = require("express");
+const bodyParser = require("body-parser");
+const cors = require("cors");
 
-const CommentList = ({ postId }) => {
-  const [comments, setComments] = useState([]);
+const app = express();
+app.use(bodyParser.json());
+app.use(cors());
 
-  const fetchData = async () => {
-    const res = await axios.get(
-      `http://localhost:4001/posts/${postId}/comments`
-    );
+const posts = {};
 
-    setComments(res.data);
-  };
+app.get("/posts", (req, res) => {
+  res.send(posts);
+});
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+app.post("/events", (req, res) => {
+  const { type, data } = req.body;
 
-  const renderedComments = comments.map((comment) => {
-    return <li key={comment.id}>{comment.content}</li>;
-  });
+  if (type === "PostCreated") {
+    const { id, title } = data;
 
-  return <ul>{renderedComments}</ul>;
-};
+    posts[id] = { id, title, comments: [] };
+  }
 
-export default CommentList;
+  if (type === "CommentCreated") {
+    const { id, content, postId } = data;
+
+    const post = posts[postId];
+    post.comments.push({ id, content });
+  }
+
+  console.log(posts);
+
+  res.send({});
+});
+
+app.listen(4002, () => {
+  console.log("Listening on 4002");
+});
